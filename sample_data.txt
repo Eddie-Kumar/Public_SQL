@@ -1,60 +1,5 @@
-
-ISO standard for date: YYYYMMDDTHHMMSS.MMM
-
-SELECT COUNT(*) FROM EMP
-
-
-
-RUN box mstsc
-OR
-search for "Remote desktop connection":
-
-
-Enter the below remote IP address as per the below screenshot:
-	167.98.157.245:2372  (For Delegate 1)
-	167.98.157.245:2373  (For Delegate 2)
-	167.98.157.245:2374  (For Delegate 3)
-	167.98.157.245:2375  (For Delegate 4)
-	167.98.157.245:2376  (For Delegate 5)
-	167.98.157.245:2377  (For Delegate 6)
-	167.98.157.245:2378  (For Delegate 7)
-
-
-•	Username: admin
-•	Password: $qL!sN0tM@r3#123
-
-
----------------
-
-Skip to content
-Search or jump to…
-Pull requests
-Issues
-Marketplace
-Explore
- 
-@Eddie-Kumar 
-Eddie-Kumar
-/
-TSQL_Basic_Training
-Private
-Code
-Issues
-Pull requests
-Actions
-Projects
-Security
-Insights
-Settings
-TSQL_Basic_Training/Samples & Examples/Emp Relational Database Script.sql
-@Eddie-Kumar
-Eddie-Kumar Add files via upload
-Latest commit ed325df 19 days ago
- History
- 1 contributor
-83 lines (67 sloc)  2.43 KB
-
---Sample Employee Relational Database Model - Script
+--------------------------------
+--TO BE EXECUTED IN SSMS (NOT ONLINE LAB-WEBSITES):
 
 CREATE DATABASE [EmpDb]
  ON  PRIMARY ( NAME = N'EmpDb', FILENAME = N'E:\Data\EmpDb.mdf')
@@ -63,11 +8,15 @@ CREATE DATABASE [EmpDb]
 ALTER DATABASE [EmpDb] SET RECOVERY SIMPLE 
 GO
 
-
 USE [EmpDb]
 GO
 
-print db_name()
+print db_name()  --View database-name in use.
+--------------------------------
+
+
+--SAMPLE TABLES WITH DATA:
+--------------------------
 
 --Create emp table:
 create table emp (
@@ -100,15 +49,6 @@ insert into emp (eid,ename,jobtitle,managerid,hiredate,salary,commission,did,rid
 	(	68736, 'Andy', 'Technical Support', 67858, '2017-05-23', 1200.00, NULL , 20	, NULL ),
 	(	69000, 'Julie', 'Sales Mentor', 66928, '2011-12-03', 1050.00, NULL , 30 , 1	)
 
-
-SELECT ROW_NUMBER() OVER(ORDER BY textvalue) rownum 
-	,* 
-FROM emp
-
-
---TRUNCATE TABLE emp
---DROP TABLE emp
-
 --Create dept table:
 CREATE TABLE [dbo].[dept](
 	[did] [int] NOT NULL,
@@ -120,10 +60,7 @@ VALUES
 	(10,	'Mgmt'),
 	(20,	'Tech'),
 	(30,	'Sales')
-
-use EmpDb
-SELECT * FROM emp INNER JOIN dept ON emp.did = dept.did
-
+    
 --Create region table:
 CREATE TABLE [dbo].[region](
 	[rid] [int] NOT NULL,
@@ -137,18 +74,99 @@ VALUES
 	(3,	'Aus_NZ'),
 	(4,	'Africa'),
 	(4,	'Asia')
-Footer
-© 2022 GitHub, Inc.
-Footer navigation
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
-TSQL_Basic_Training/Emp Relational Database Script.sql at main · Eddie-Kumar/TSQL_Basic_Training
+
+-------------------------------------------------------
+
+
+Queries from the Lab:
+---------------------
+
+--Delete whole table:
+--DROP TABLE emp
+
+--Wipe out whole data from table:
+--Truncate table emp
+
+SELECT * FROM emp
+SELECT * FROM dept
+SELECT * FROM region
+
+--Change region-id from 4 to 5:
+update region
+set rid=5
+WHERE regionname = 'Asia'
+
+--Create relation between Emp & Dept table on 'did' column:
+ALTER TABLE emp
+add CONSTRAINT fkey_did
+FOREIGN key (did) REFERENCES dept(did)
+
+--Add Primary key to the Dept table:
+ALTER TABLE dept
+add CONSTRAINT pkey_did PRIMARY KEY(did)
+
+--Get all details of a table (in SSMS):
+sp_help dept
+
+--List Constraint details of specified table:
+SELECT TABLE_NAME, CONSTRAINT_TYPE,CONSTRAINT_NAME
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+WHERE TABLE_NAME='emp'
+
+--List those earning over £25,000:
+SELECT ename,salary,did FROM emp
+WHERE salary > 25000
+
+--List dept-names along ename:
+SELECT e.ename, e.did, d.DeptName FROM emp AS e
+	JOIN dept AS d
+    	ON e.did = d.did
+
+--All columns in descending order by Salary:
+SELECT salary AS Sal, * FROM emp 
+ORDER BY salary DESC
+
+--Top salary only:
+SELECT max(salary) FROM emp
+
+--2nd highest salary:#
+--Option-1:  INNER QUERY:
+SELECT top 1 salary AS Sal, * FROM emp 
+WHERE salary < (SELECT top 1 salary FROM emp ORDER BY salary DESC)
+ORDER BY salary DESC
+
+--Option-2:  OFFSET .. FETCH:
+SELECT salary AS Sal, * FROM emp 
+ORDER BY salary DESC
+OFFSET 1 ROW FETCH NEXT 1 ROW ONLY;
+
+--List emp joined after year 2015:
+SELECT * from 	emp
+WHERE hiredate > '20150101'
+
+--List emp joined between 2012 and 2015:
+SELECT * from 	emp
+WHERE hiredate BETWEEN '20120101' AND '20160101'
+
+--List emp joined in year 2011:
+SELECT * from emp
+WHERE Year(hiredate) = '2011'
+
+--List emp-name, jobtitle, dept-name whose job-title starts with 'Sales':
+SELECT e.ename, e.jobtitle, d.DeptName  from emp e
+JOIN dept d ON e.did=d.did
+WHERE e.jobtitle LIKE 'Sales%'
+
+--Manager's name:
+--Option:1 List emp-names with their Manager's name USING self-join:
+SELECT e.ename, e.managerid, m.ename AS [Mgr-Name] from emp e
+JOIN emp m ON e.managerid=m.eid
+WHERE e.jobtitle LIKE 'Sales%'
+
+--Option:2 List emp-names with their Manager's name USING inner query:
+SELECT ename, managerid, (SELECT top 1 m.ename from emp m where e.managerid=m.eid) AS Mgr from emp e
+WHERE e.jobtitle LIKE 'Sales%'
+
+
+
+    
