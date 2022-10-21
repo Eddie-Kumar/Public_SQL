@@ -1,0 +1,154 @@
+
+ISO standard for date: YYYYMMDDTHHMMSS.MMM
+
+SELECT COUNT(*) FROM EMP
+
+
+
+RUN box mstsc
+OR
+search for "Remote desktop connection":
+
+
+Enter the below remote IP address as per the below screenshot:
+	167.98.157.245:2372  (For Delegate 1)
+	167.98.157.245:2373  (For Delegate 2)
+	167.98.157.245:2374  (For Delegate 3)
+	167.98.157.245:2375  (For Delegate 4)
+	167.98.157.245:2376  (For Delegate 5)
+	167.98.157.245:2377  (For Delegate 6)
+	167.98.157.245:2378  (For Delegate 7)
+
+
+•	Username: admin
+•	Password: $qL!sN0tM@r3#123
+
+
+---------------
+
+Skip to content
+Search or jump to…
+Pull requests
+Issues
+Marketplace
+Explore
+ 
+@Eddie-Kumar 
+Eddie-Kumar
+/
+TSQL_Basic_Training
+Private
+Code
+Issues
+Pull requests
+Actions
+Projects
+Security
+Insights
+Settings
+TSQL_Basic_Training/Samples & Examples/Emp Relational Database Script.sql
+@Eddie-Kumar
+Eddie-Kumar Add files via upload
+Latest commit ed325df 19 days ago
+ History
+ 1 contributor
+83 lines (67 sloc)  2.43 KB
+
+--Sample Employee Relational Database Model - Script
+
+CREATE DATABASE [EmpDb]
+ ON  PRIMARY ( NAME = N'EmpDb', FILENAME = N'E:\Data\EmpDb.mdf')
+ LOG ON ( NAME = N'EmpDb_log', FILENAME = N'E:\Data\EmpDb_log.ldf' )
+
+ALTER DATABASE [EmpDb] SET RECOVERY SIMPLE 
+GO
+
+
+USE [EmpDb]
+GO
+
+print db_name()
+
+--Create emp table:
+create table emp (
+	eid	int 	 NOT NULL PRIMARY KEY,
+	ename	varchar(100)	,
+	jobtitle	varchar(100)	,
+	managerid	int	,
+	hiredate	date	,
+	salary	money	,
+	commission	decimal(2,2)	,
+	did	int ,
+	rid int
+)			
+
+insert into emp (eid,ename,jobtitle,managerid,hiredate,salary,commission,did,rid)
+	Values
+	(	68319, 'Kylie', 'President', 68319, '2009-11-18', 60000.00, NULL , 10	, NULL ),
+	(	66928, 'Bob', 'General Manager', 68319, '2013-05-01', 27500.00, 0.33 , 10	, NULL ),
+	(	67832, 'Clare', 'Technical Manager', 68319, '2011-06-09', 25500.00, NULL , 10	, NULL ),
+	(	65646, 'John', 'Sales Manager', 68319, '2014-04-02', 29570.00, NULL , 10	, NULL ),
+	(	67858, 'Scarlet', 'Analyst', 65646, '2017-04-19', 3100.00, NULL , 20	, NULL ),
+	(	69324, 'Mark', 'DBA', 67832, '2012-01-23', 1900.00, NULL , 20	, NULL ),
+	(	69062, 'Frank', 'Analyst', 65646, '2011-12-03', 3100.00, NULL , 20	, NULL ),
+	(	63679, 'Sandra', 'Developer', 69062, '2010-12-18', 2900.00, NULL , 20	, NULL ),
+	(	64989, 'Irene', 'Sales Representative', 66928, '2018-02-20', 1700.00, 0.1, 30	, 1 ),
+	(	65271, 'Dwayne', 'Sales Representative', 66928, '2011-02-22', 1350.00, 0.05, 30	, 2 ),
+	(	66564, 'Maddy', 'Sales Representative', 66928, '2011-09-28', 1350.00, 0.02, 30	, 1 ),
+	(	66569, 'Matt', 'Sales Representative', 66928, '2019-01-28', 1320.00, 0.02, 30	, 2 ),
+	(	68454, 'Tucker', 'Sales Representative', 66928, '2011-09-08', 1600.00, 0.01, 30	, 3 ),
+	(	68736, 'Andy', 'Technical Support', 67858, '2017-05-23', 1200.00, NULL , 20	, NULL ),
+	(	69000, 'Julie', 'Sales Mentor', 66928, '2011-12-03', 1050.00, NULL , 30 , 1	)
+
+
+SELECT ROW_NUMBER() OVER(ORDER BY textvalue) rownum 
+	,* 
+FROM emp
+
+
+--TRUNCATE TABLE emp
+--DROP TABLE emp
+
+--Create dept table:
+CREATE TABLE [dbo].[dept](
+	[did] [int] NOT NULL,
+	[DeptName] [nchar](30) NULL
+)
+
+INSERT INTO dept ([did],[DeptName])
+VALUES
+	(10,	'Mgmt'),
+	(20,	'Tech'),
+	(30,	'Sales')
+
+use EmpDb
+SELECT * FROM emp INNER JOIN dept ON emp.did = dept.did
+
+--Create region table:
+CREATE TABLE [dbo].[region](
+	[rid] [int] NOT NULL,
+	[RegionName] [nchar](30) NULL
+)
+
+INSERT INTO region ([rid],[RegionName])
+VALUES
+	(1,	'Americas'),
+	(2,	'Europe'),
+	(3,	'Aus_NZ'),
+	(4,	'Africa'),
+	(4,	'Asia')
+Footer
+© 2022 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+TSQL_Basic_Training/Emp Relational Database Script.sql at main · Eddie-Kumar/TSQL_Basic_Training
