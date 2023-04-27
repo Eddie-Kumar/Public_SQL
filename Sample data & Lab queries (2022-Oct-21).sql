@@ -43,11 +43,13 @@ insert into emp (eid,ename,jobtitle,managerid,hiredate,salary,commission,did,rid
 	(	63679, 'Sandra', 'Developer', 69062, '2010-12-18', 2900.00, NULL , 20	, NULL ),
 	(	64989, 'Irene', 'Sales Representative', 66928, '2018-02-20', 1700.00, 0.1, 30	, 1 ),
 	(	65271, 'Dwayne', 'Sales Representative', 66928, '2011-02-22', 1350.00, 0.05, 30	, 2 ),
-	(	66564, 'Maddy', 'Sales Representative', 66928, '2011-09-28', 1350.00, 0.02, 30	, 1 ),
-	(	66569, 'Matt', 'Sales Representative', 66928, '2019-01-28', 1320.00, 0.02, 30	, 2 ),
+	(	66564, 'Gerogia', 'Sales Representative', 66928, '2011-09-28', 1400.00, 0.02, 30	, 1 ),
+	(	66569, 'Matt', 'Sales Representative', 66928, '2019-01-28', 1325.00, 0.02, 30	, 2 ),
+	(	66571, 'Raj', 'Sales Representative', 66928, '2013-02-15', 1190.00, 0.02, 30	, 5 ),
 	(	68454, 'Tucker', 'Sales Representative', 66928, '2011-09-08', 1600.00, 0.01, 30	, 3 ),
+	(	68455, 'Sam', 'Sales Representative', 66928, '2020-09-18', 1400.00, 0.01, 30	, 4 ),
 	(	68736, 'Andy', 'Technical Support', 67858, '2017-05-23', 1200.00, NULL , 20	, NULL ),
-	(	69000, 'Julie', 'Sales Mentor', 66928, '2011-12-03', 1050.00, NULL , 30 , 1	)
+	(	69000, 'Julie', 'Sales Apprentice', 66928, '2011-12-03', 950.00, NULL , 30 , 4	)
 
 --Create dept table:
 CREATE TABLE [dbo].[dept](
@@ -59,7 +61,8 @@ INSERT INTO dept ([did],[DeptName])
 VALUES
 	(10,	'Mgmt'),
 	(20,	'Tech'),
-	(30,	'Sales')
+	(30,	'Sales'),
+	(40,	'Procurement')
     
 --Create region table:
 CREATE TABLE [dbo].[region](
@@ -71,11 +74,18 @@ INSERT INTO region ([rid],[RegionName])
 VALUES
 	(1,	'Americas'),
 	(2,	'Europe'),
-	(3,	'Aus_NZ'),
+	(3,	'Australias'),
 	(4,	'Africa'),
-	(4,	'Asia')
+	(5,	'Asia'),
+	(6,	'Antarctica')
 
 -------------------------------------------------------
+SELECT * FROM emp
+SELECT * FROM dept
+SELECT * FROM region
+-------------------------------------------------------
+
+
 
 
 Queries from the Lab:
@@ -86,10 +96,6 @@ Queries from the Lab:
 
 --Wipe out whole data from table:
 --Truncate table emp
-
-SELECT * FROM emp
-SELECT * FROM dept
-SELECT * FROM region
 
 --Change region-id from 4 to 5:
 update region
