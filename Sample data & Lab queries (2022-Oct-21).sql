@@ -1,10 +1,18 @@
 --------------------------------
 --TO BE EXECUTED IN SSMS (NOT ONLINE LAB-WEBSITES):
 
-CREATE DATABASE [EmpDb]
- ON  PRIMARY ( NAME = N'EmpDb', FILENAME = N'E:\Data\EmpDb.mdf')
- LOG ON ( NAME = N'EmpDb_log', FILENAME = N'E:\Data\EmpDb_log.ldf' )
+--Check SQL Server details (name/version):
+print @@servername  --OR select SERVERPROPERTY('ServerName')		-- host-server & named-instance name.
+print @@version
+print system_user
 
+CREATE DATABASE [EmpDb]
+ ON  PRIMARY ( NAME = N'EmpDb', FILENAME = N'D:\TWuddHq4UG\data_tmp\EmpDb.mdf')
+ LOG ON ( NAME = N'EmpDb_log', FILENAME = N'D:\TWuddHq4UG\data_tmp\EmpDb_log.ldf' )
+
+--DB state:
+SELECT database_id, name, state_desc [DB_State], recovery_model_desc, user_access_desc, collation_name FROM sys.databases WHERE name = 'EmpDb'
+--Change Recovery Model:
 ALTER DATABASE [EmpDb] SET RECOVERY SIMPLE 
 GO
 
@@ -30,6 +38,9 @@ create table emp (
 	did	int ,
 	rid int
 )			
+
+EXEC sp_tables @table_owner='dbo'
+EXEC sp_help 'emp'
 
 insert into emp (eid,ename,jobtitle,managerid,hiredate,salary,commission,did,rid)
 	Values
@@ -80,15 +91,14 @@ VALUES
 	(6,	'Antarctica')
 
 -------------------------------------------------------
+EXEC sp_tables @table_owner='dbo'
 SELECT * FROM emp
 SELECT * FROM dept
 SELECT * FROM region
 -------------------------------------------------------
 
 
-
-
-Queries from the Lab:
+--Queries from the Lab:
 ---------------------
 
 --Delete whole table:
@@ -97,10 +107,10 @@ Queries from the Lab:
 --Wipe out whole data from table:
 --Truncate table emp
 
---Change region-id from 4 to 5:
-update region
-set rid=5
-WHERE regionname = 'Asia'
+--Update data:
+update dept
+set DeptName = 'HR'
+WHERE did=40
 
 --Create relation between Emp & Dept table on 'did' column:
 ALTER TABLE emp
@@ -173,6 +183,3 @@ WHERE e.jobtitle LIKE 'Sales%'
 SELECT ename, managerid, (SELECT top 1 m.ename from emp m where e.managerid=m.eid) AS Mgr from emp e
 WHERE e.jobtitle LIKE 'Sales%'
 
-
-
-    
