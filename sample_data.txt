@@ -1,4 +1,8 @@
---------------------------------
+Advanced SQL - Lab Setup & Exercises:
+-------------------------------------
+-------------------------------------
+-------------------------------------
+
 --TO BE EXECUTED IN SSMS (NOT ONLINE LAB-WEBSITES):
 
 --Check SQL Server details (name/version):
@@ -34,7 +38,7 @@ create table emp (
 	managerid	int	,
 	hiredate	date	,
 	salary	money	,
-	commission	decimal(2,2)	,
+	commission	decimal(9,2)	,
 	did	int ,
 	rid int
 )			
@@ -96,3 +100,457 @@ SELECT * FROM emp
 SELECT * FROM dept
 SELECT * FROM region
 -------------------------------------------------------
+
+
+--Queries from the Lab:
+---------------------
+
+--Delete whole table:
+--DROP TABLE emp
+
+--Wipe out whole data from table:
+--Truncate table emp
+
+--Update data:
+update dept
+set DeptName = 'HR'
+WHERE did=40
+
+--Add Primary Key to the 'Dept' table:
+ALTER TABLE dept
+ADD CONSTRAINT pk_did
+PRIMARY KEY(did)
+
+--Create relation between Emp & Dept table on 'did' column:
+ALTER TABLE emp
+ADD CONSTRAINT fk_did
+FOREIGN KEY(did) REFERENCES dept(did)
+
+--Get all details of a table (in SSMS):
+sp_help emp
+sp_help dept
+--alternatively select table name and press Alt+F1.
+
+--List Constraint details of specified table:											 
+SELECT TABLE_NAME, CONSTRAINT_TYPE,CONSTRAINT_NAME
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+WHERE TABLE_NAME='emp'
+
+--List dept-names along ename:
+SELECT e.ename, e.did, d.DeptName FROM emp AS e
+	JOIN dept AS d
+    	ON e.did = d.did
+
+--List employees earning over £25,000, along with their department names:
+SELECT e.ename, e.salary, e.did, d.deptname 
+FROM emp e
+	INNER JOIN dept d ON e.did = d.did
+WHERE e.salary > 25000
+
+--All columns in descending order by Salary:
+SELECT salary AS Sal, * FROM emp 
+ORDER BY salary DESC
+
+--Get Highest Salary:
+SELECT MAX(salary) FROM emp
+
+SELECT top 1 ename, salary FROM emp
+ORDER BY salary DESC
+
+
+--2nd highest salary:
+--Option-1:  OFFSET..FETCH:
+SELECT  * FROM emp
+ORDER BY salary DESC
+OFFSET 1 ROW FETCH NEXT 1 ROW ONLY
+
+--Option-2:  INNER QUERY:
+SELECT * FROM emp 
+where eid = (SELECT top 1 eid FROM emp 
+				where salary < (SELECT max(salary) FROM emp)
+				order by salary desc
+			)
+
+--Option-3: using CTE:
+;WITH top2Sals AS
+(SELECT top 2 * FROM emp order by salary desc)
+SELECT TOP 1 ename, salary FROM top2Sals
+ORDER BY salary
+
+
+--Hire date queries:
+
+--First person who joined the company and still a current employee:
+SELECT top 1 * from emp
+order by hiredate
+
+--List emp joined after year 2015:
+SELECT * from 	emp
+WHERE hiredate > '20150101'
+
+--List emp joined before year 2011 or earlier:
+SELECT * from 	emp
+WHERE hiredate < '20120101'
+
+--List emp joined between 2012 and 2015:
+SELECT * from 	emp
+WHERE hiredate BETWEEN '20120101' AND '20160101'
+
+--List emp joined during or before year 2011:
+SELECT * from 	emp
+WHERE YEAR(hiredate) <= 2011											   
+--WHERE Year(hiredate) = '2011' --employees hired in exactly year 2011
+
+--List employees who were hired within 2 years of hiredate of 'Kylie':
+--Method-1: using Sub-queries:
+SELECT * from emp
+WHERE Year(hiredate) > (SELECT Year(hiredate) FROM emp WHERE ename='Kylie') AND
+ 	  Year(hiredate)  <= Year(DATEADD(year, 2, (SELECT hiredate FROM emp WHERE ename='Kylie')))
+--Method-2: using @Variable:
+DECLARE @d INT
+SELECT @d=Year(hiredate) FROM emp WHERE ename='Kylie'
+SELECT * from emp
+WHERE Year(hiredate) > @d AND
+ 	  Year(hiredate)  <= @d+2
+
+
+--Derived table and CTEs:
+
+--using Derived table:
+SELECT e.ename, e.hiredate, d.DeptName FROM emp AS e
+	JOIN dept AS d ON e.did = d.did
+WHERE e.hiredate BETWEEN (SELECT hiredate FROM emp WHERE ename='Kylie') AND (SELECT hiredate FROM emp WHERE ename='Clare')
+ORDER BY hiredate
+
+--using CTE:
+;WITH k AS (SELECT hiredate FROM emp WHERE ename='Kylie') 
+, c AS (SELECT hiredate FROM emp WHERE ename='Clare')
+SELECT e.ename, e.hiredate, d.DeptName FROM emp AS e
+	JOIN dept AS d ON e.did = d.did
+WHERE e.hiredate BETWEEN (SELECT hiredate FROM k) AND (SELECT hiredate FROM c) 
+--JOINS:
+
+--Inner Join:
+SELECT * FROM emp e
+JOIN region AS r ON e.rid = r.rid
+
+--Left Join:
+SELECT * FROM emp e
+LEFT JOIN region AS r ON e.rid = r.rid
+
+--Left Join with NULLs:
+SELECT r.rid, r.RegionName FROM region r
+LEFT JOIN emp AS e ON r.rid = e.rid
+WHERE e.rid IS NULL
+
+--All emps from Sales dept and in African region:
+SELECT e.ename, e.jobtitle, d.DeptName, r.RegionName FROM emp e
+JOIN dept d ON e.did=d.did
+LEFT JOIN region r ON r.rid = e.rid
+WHERE e.rid = 4    --Africa
+	AND d.did = 30 --sales
+
+
+--Manager's name:
+--Option:1 List emp-names with their Manager's name USING self-join:
+SELECT e.ename, e.managerid, m.ename AS [Mgr-Name] from emp e
+JOIN emp m ON e.managerid=m.eid
+WHERE e.jobtitle LIKE 'Sales%'
+
+--Option:2 List emp-names with their Manager's name USING inner query:
+SELECT ename, managerid, (SELECT top 1 m.ename from emp m where e.managerid=m.eid) AS Mgr from emp e
+WHERE e.jobtitle LIKE 'Sales%'
+
+
+--Departments Queries:
+
+--List emp-name, jobtitle, dept-name whose job-title starts with 'Sales':
+SELECT e.ename, e.jobtitle, d.DeptName  from emp e
+JOIN dept d ON e.did=d.did
+WHERE e.jobtitle LIKE 'Sales%'
+--Departments receiving commission:
+SELECT distinct d.DeptName  from dept d
+JOIN emp e ON e.did=d.did
+WHERE e.commission IS NOT NULL
+
+
+--Case..When to print whether or not Commission was paid:
+SELECT e.ename, d.DeptName, 
+	CASE WHEN e.commission > 0 THEN 'Commision Paid' ELSE 'Commision Not Paid'
+	END AS [Commision_Paid],
+	e.commission
+from dept d
+JOIN emp e ON e.did=d.did
+
+--List departments with the total amount of commission paid (to their employees):
+SELECT d.DeptName, sum(e.commission * e.salary) [TotalComm]
+from dept d
+	JOIN emp e ON e.did=d.did
+group by d.DeptName
+
+--List departments with the total amount of commission paid (to their employees):
+SELECT d.DeptName, FORMAT(sum(e.commission * e.salary), 'c', 'en-gb') [TotalComm]
+from dept d
+	JOIN emp e ON e.did=d.did
+group by d.DeptName
+
+
+--List departments with the sum of salary paid to each EXCLUDING Management:
+SELECT d.DeptName, FORMAT(sum(e.salary), 'c', 'en-gb') [TotalSalary]
+from dept d
+	JOIN emp e ON e.did=d.did
+group by d.DeptName
+having d.DeptName <> 'Mgmt'
+
+
+--No output no assignment: if using SELECT to assign value to a @variable, it will only be assinged if SELECT query returns some output.
+DECLARE @n varchar(99) = 'Worker-A'
+SELECT @n = ename FROM emp e
+	WHERE e.eid = 0		--@n = Julie
+	--WHERE e.eid = 0		--@n = Worker-A / unchanged
+print @n
+
+--List employees along with their geographical regions they work with:
+SELECT * FROM emp e
+LEFT JOIN region AS r ON e.rid = r.rid
+--List employees who do not have an associated geographical regions:
+SELECT r.rid, r.RegionName FROM region r
+LEFT JOIN emp AS e ON r.rid = e.rid
+WHERE e.rid IS NULL
+
+--All emps from Sales dept and in African region:
+SELECT e.ename, e.jobtitle, d.DeptName, r.RegionName FROM emp e
+JOIN dept d ON e.did=d.did
+LEFT JOIN region r ON r.rid = e.rid
+WHERE e.rid = 4
+	AND d.did = 30 --sales
+---------------------------------------------
+
+
+
+-----------------------------LAB PART-2-----------------------------
+
+* Create a VIEW called 'v_Emp_Salary_with_Managers' that creates a view retrieving eName, Salary along with their manager names.
+
+	CREATE VIEW v_Emp_Salary_with_Managers AS
+	SELECT e.ename, e.salary, e.managerid, m.ename AS [Mgr-Name] from emp e
+	JOIN emp m ON e.managerid=m.eid
+
+	SELECT * FROM v_Emp_Salary_with_Managers
+
+
+* Create a simple stored proc to list all employees in the Emp table:
+CREATE PROCEDURE usp_emp AS 
+BEGIN
+	SELECT * FROM emp
+END
+
+* Create a stored proc (called 'usp_Emps_By_ManagerID') that returns list of all the employees for a given Manager_ID.
+CREATE OR ALTER PROCEDURE sp_Emp_Salary_with_Managers (@manager_id INT)
+AS
+BEGIN
+	/* 	SELECT e.ename, e.managerid from emp e
+	WHERE e.managerid=@manager_id */
+	SELECT e.ename, e.salary, e.managerid, m.ename AS [Mgr-Name] from emp e
+	JOIN emp m ON e.managerid=m.eid AND e.managerid=@manager_id
+END
+GO
+--Usage: EXEC sp_Emp_Salary_with_Managers @manager_id = 68319
+
+
+* Wrire a stored proc that accepts your date of birth, it then returns the break-down of your age (as in "Today you are x years, x months and x days old.")
+-- Following Stored Proc pricisely calculates & returns the Age in full Days, Months and Years.
+-- If DOB not supplied it asks for it (see the usage at the bottom):
+CREATE OR ALTER PROCEDURE sp_Age_Calc (@dob DATE = NULL)
+AS
+BEGIN
+	IF @dob IS NULL
+	BEGIN
+		SELECT 'Please provide your Date of birth (preferably in ISO format: YYYY-MM-DD)'
+		RETURN
+	END
+	IF @dob > getdate()  --checks if @DOB is in future
+	BEGIN
+		print 'You have entered a date in future,  please enter a valid date of birth in ISO format: YYYY-MM-DD'
+		RETURN
+	END
+	DECLARE @y INT,@m INT,@d INT --to store date-of-birth year/month/day.
+	DECLARE @cy INT,@cm INT,@cd INT --to store current year/month/day.
+	DECLARE @t DATE, @dt DATE    --to store temporary dates.
+	SET @t = DATEFROMPARTS(DATEPART(YEAR, getdate()), DATEPART(MONTH, @dob), DATEPART(DAY, @dob))
+	SET @y = DATEDIFF(YEAR, @dob, getdate())
+	IF @t > getdate()  --checks if month & day are higher value
+		SET @y = @y - 1
+	SET @t = DATEADD(YEAR, @y, @dob)
+	SET @m = DATEDIFF(MONTH, @t, getdate())
+	IF DATEPART(DAY, @t) > DATEPART(DAY, getdate())
+	BEGIN
+		SET @m = @m - 1
+	END
+	SET @t = DATEADD(MONTH, @m, @t)
+	SET @d = DATEDIFF(DAY, @t, getdate())
+	print 'Date of birth: ' + cast(@dob as varchar(10))
+	print 'Date today is: ' + cast(cast(getdate() as date) as varchar(10))
+	PRINT 'Today you are ' + cast(@y AS varchar(4)) + ' years, ' + cast(@m AS varchar(2)) + ' months and ' + cast(@d AS varchar(2)) + ' days old.'
+END
+GO
+/*--Usage: 
+	EXEC sp_Age_Calc @dob = '2000/01/01'  --millennium.
+	EXEC sp_Age_Calc @dob = '2022/12/25'  --last Christmas.
+	EXEC sp_Age_Calc @dob = '2025/05/14'  --future date.
+	EXEC sp_Age_Calc @dob = '0001/01/01'  --past (valid) date.
+*/
+
+* (simple loop) using While loop print numbers from 1 to 10.
+DECLARE @i INT = 1
+WHILE @i <= 10
+BEGIN
+	PRINT @i
+	SET @i = @i + 1
+END
+
+* Write a stored proc (simple loop) using While loop check if the given number is a prime number.
+CREATE OR ALTER PROCEDURE sp_CheckPrime (@n INT)
+AS
+BEGIN
+	DECLARE @flag INT = 0
+	DECLARE @i INT = @n/2
+	WHILE @i > 1
+	BEGIN
+		IF @n % @i = 0
+		BEGIN
+			SET @flag = 0
+			BREAK;
+		END
+		ELSE
+			SET @flag = 1
+		SET @i = @i - 1
+	END
+	IF @flag = 1
+		PRINT 'Yes, ' + cast(@n as varchar(40))  + ' is a Prime number.'
+	ELSE
+		PRINT 'No, ' + cast(@n as varchar(40))  + ' is NOT a Prime number.'
+END
+GO
+/*--Usage: 
+EXEC sp_CheckPrime  @n = 7
+*/
+
+
+* (simple loop) using While loop generate a list of first 10 prime numbers.
+
+
+* (simple Cursor) to list all employees from the Sales team.
+DECLARE @n VARCHAR(99)
+DECLARE @d VARCHAR(99)
+
+DECLARE cur_Emps_in_Sales CURSOR FOR 
+	SELECT e.ename, d.DeptName FROM emp e
+	JOIN dept d ON e.did=d.did
+	WHERE d.did = 30 --sales
+
+OPEN cur_Emps_in_Sales  
+FETCH NEXT FROM cur_Emps_in_Sales INTO @n, @d
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN
+	  PRINT @n + ', ' + @d
+	  FETCH NEXT FROM cur_Emps_in_Sales INTO @n, @d
+END 
+
+CLOSE cur_Emps_in_Sales  
+DEALLOCATE cur_Emps_in_Sales 
+
+
+* Write a simple Cursor to list all employees from the Sales team and display their names along with their salaries and commissions.
+DECLARE @n VARCHAR(99)
+DECLARE @s VARCHAR(99)
+DECLARE @c VARCHAR(99)
+DECLARE cur_Emps_Salary_Comm CURSOR FOR 
+	SELECT e.ename, e.salary, e.commission FROM emp e WHERE e.did = 30
+OPEN cur_Emps_Salary_Comm
+FETCH NEXT FROM cur_Emps_Salary_Comm INTO @n, @s, @c
+WHILE @@FETCH_STATUS = 0  
+BEGIN
+	  PRINT @n + ', ' + @s + ', ' + @c
+	  FETCH NEXT FROM cur_Emps_Salary_Comm INTO @n, @s, @c
+END
+CLOSE cur_Emps_Salary_Comm  
+DEALLOCATE cur_Emps_Salary_Comm 
+
+* Create a copy of Employee table as a temporary table ("##Emp2") with an additinal column called "Commision_Amount" that should be populated with the same value as in "Commission" column.
+use EmpDb
+drop table if exists "##Emp2"   --Drop if exists.
+select *, commission [Commision_Amount] INTO ##Emp2 from emp  --Create copy of table with additional column.
+--Check if table created as expected:
+select * from ##Emp2
+use tempdb
+exec sp_help '##Emp2'
+
+
+
+* Create a Cursor that inserts values into the new column [Commision_Amount] as created above in the "##Emp2" table: 
+	1) For employees with non-zero/not-null values in the "Commission%" column, insert: [Salary]*[Commission%].
+	2) For employees who work in "Tech" department, insert: £10 (flat/fixed value).
+	3) For other employees (who are neither in "Tech" department nor have any "Commission%"), insert: 0.
+Solution:
+use EmpDb
+--drop table if exists "##Emp2"   --Drop if exists.
+--select *, commission [Commision_Amount] INTO ##Emp2 from emp  --Create copy of table with additional column.
+--select * from ##Emp2   --Check if table created as expected.
+DECLARE @eid INT
+DECLARE @ename VARCHAR(99)
+DECLARE @dname VARCHAR(99)
+DECLARE @sal MONEY
+DECLARE @comm MONEY
+--select * from dept
+DECLARE cur_Emps_Salary_Comm CURSOR FOR 
+	SELECT e.eid, e.ename, d.DeptName, e.salary, e.Commision_Amount
+	FROM ##Emp2 e JOIN dept d ON e.did = d.did
+OPEN cur_Emps_Salary_Comm
+FETCH NEXT FROM cur_Emps_Salary_Comm INTO @eid, @ename, @dname, @sal, @comm
+WHILE @@FETCH_STATUS = 0  
+BEGIN
+	IF trim(@dname) LIKE 'Tech'
+		UPDATE ##Emp2 SET Commision_Amount = 10.0 WHERE eid = @eid
+	ELSE
+		IF ISNULL(@comm,0) = 0
+			UPDATE ##Emp2 SET Commision_Amount = 0 WHERE eid = @eid
+		ELSE
+			UPDATE ##Emp2 SET Commision_Amount = CAST(@sal AS decimal(9,2)) * ISNULL(@comm,0)  WHERE eid = @eid
+	PRINT cast(@eid as varchar(99)) + ', ' +  @ename + ', ' +  trim(@dname) + ', ' +  cast(@sal as varchar(99)) + ', ' +  cast(ISNULL(@comm,0) as varchar(99))
+	FETCH NEXT FROM cur_Emps_Salary_Comm INTO @eid, @ename, @dname, @sal, @comm
+END
+CLOSE cur_Emps_Salary_Comm  
+DEALLOCATE cur_Emps_Salary_Comm
+---------------------------------
+
+* Write a simple Try..Catch block to handle error gracefully:
+BEGIN TRY
+    -- Generate a divide-by-zero error:
+    SELECT 1/0;
+END TRY
+BEGIN CATCH
+    SELECT
+        ERROR_NUMBER() AS ErrorNumber  		--=> 8134
+        ,ERROR_SEVERITY() AS ErrorSeverity		--=> 16
+        ,ERROR_STATE() AS ErrorState		--=> 1
+        ,ERROR_PROCEDURE() AS ErrorProcedure	--=> NULL
+        ,ERROR_LINE() AS ErrorLine			--=> 3
+        ,ERROR_MESSAGE() AS ErrorMessage;		--=> Divide by zero error encountered.
+END CATCH;
+
+
+
+* Create another temporary table called "##Emp3" by copying of "##Emp2" table with an additinal column called "Bonus" that should be populated with NULLs.
+use EmpDb
+drop table if exists "##Emp3"   --Drop if exists.
+select *, NULL [Bonus] INTO ##Emp3 from emp  --Create copy of table with additional column.
+select * from ##Emp3   --Check if table created as expected.
+
+* Create a stored proc that inserts values into the newly created Bonus column within the "##Emp3" table as below:
+	1) [Salary]/[Commision_Amount]
+	2) Use Try..Catch block to trap any errors (divide by zero) and deal with errors gracefully (to show appropriate error message).
+When called, the stored proc should list all employees along with a newly populated "Bonus" column.
+
+Above is similar to the "simple Try..Catch block" (to be completed by Delegates).
