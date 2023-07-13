@@ -141,7 +141,7 @@ SELECT e.ename, e.did, d.DeptName FROM emp AS e
 	JOIN dept AS d
     	ON e.did = d.did
 
---List employees earning over £25,000, along with their department names:
+--List employees earning over Â£25,000, along with their department names:
 SELECT e.ename, e.salary, e.did, d.deptname 
 FROM emp e
 	INNER JOIN dept d ON e.did = d.did
@@ -214,8 +214,9 @@ WHERE Year(hiredate) > @d AND
  	  Year(hiredate)  <= @d+2
 
 
---Derived table and CTEs:
 
+--List Employees hired after Kylie but before Clare:
+--Derived table and CTEs:
 --using Derived table:
 SELECT e.ename, e.hiredate, d.DeptName FROM emp AS e
 	JOIN dept AS d ON e.did = d.did
@@ -491,7 +492,7 @@ exec sp_help '##Emp2'
 
 * Create a Cursor that inserts values into the new column [Commision_Amount] as created above in the "##Emp2" table: 
 	1) For employees with non-zero/not-null values in the "Commission%" column, insert: [Salary]*[Commission%].
-	2) For employees who work in "Tech" department, insert: £10 (flat/fixed value).
+	2) For employees who work in "Tech" department, insert: Â£10 (flat/fixed value).
 	3) For other employees (who are neither in "Tech" department nor have any "Commission%"), insert: 0.
 Solution:
 use EmpDb
