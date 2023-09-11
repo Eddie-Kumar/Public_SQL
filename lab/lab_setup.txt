@@ -1,9 +1,11 @@
----Basic or Advanced SQL - Lab Setup & Exercises:
+--Lab Setup for Basic/Advanced SQL Exercises:
+--Sample database: Employee Management System
+=============================================
+
 ---------------------------------------
 --All rights reserved. GPL-GNU licence.
 --No responsibility will be taken by the author for any issues that may be caused by any code in this file.
 -------------------------------------
-
 --TO BE EXECUTED IN SSMS (NOT ONLINE LAB-WEBSITES):
 
 --Check SQL Server details (name/version):
@@ -11,12 +13,16 @@ print @@servername  --OR select SERVERPROPERTY('ServerName')		-- host-server & n
 print @@version
 print system_user
 
+-------------------------------------
+--Do NOT run following database creation without updating the File-Paths first.
+--(Alterntively, in SSMS create database using GUI (Right click "Databases" -> "New Database")
 CREATE DATABASE [EmpDb]
- ON  PRIMARY ( NAME = N'EmpDb', FILENAME = N'D:\TWuddHq4UG\data_tmp\EmpDb.mdf')
- LOG ON ( NAME = N'EmpDb_log', FILENAME = N'D:\TWuddHq4UG\data_tmp\EmpDb_log.ldf' )
+ ON  PRIMARY ( NAME = N'EmpDb', FILENAME = N'C:\temp\EmpDb.mdf')
+ LOG ON ( NAME = N'EmpDb_log', FILENAME = N'C:\temp\EmpDb_log.ldf' )
+-------------------------------------
 
 --DB state:
-SELECT database_id, name, state_desc [DB_State], recovery_model_desc, user_access_desc, collation_name FROM sys.databases WHERE name = 'EmpDb'
+SELECT database_id, name, state_desc [DB_State], recovery_model_desc, user_access_desc, collation_name, compatibility_level FROM sys.databases WHERE name = 'EmpDb'
 --Change Recovery Model:
 ALTER DATABASE [EmpDb] SET RECOVERY SIMPLE 
 GO
@@ -28,8 +34,8 @@ print db_name()  --View database-name in use.
 --------------------------------
 
 
---SAMPLE TABLES WITH DATA:
---------------------------
+--SAMPLE TABLES CREATION WITH DATA:
+-----------------------------------
 
 --Create emp table:
 create table emp (
