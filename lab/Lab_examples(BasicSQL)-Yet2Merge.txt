@@ -1,3 +1,5 @@
+--To be merged with SQL exercises (Basic+Adv.)
+
 -- Practical exercises - Employee sample data:
 ==============================================
 
