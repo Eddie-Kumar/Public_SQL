@@ -712,7 +712,7 @@ EXEC CalcBonus
 -------------------------------------------------
 
 
---SET operation Queries:
+--SET operations Queries:
 
 /*Note: SQL provides 3 set operations:
 1) UNION: Combine all results from two query blocks into a single result, omitting any duplicates.
@@ -750,5 +750,37 @@ SELECT * FROM emp WHERE managerid IN (68319, 66928)  -- IDs of "Kylie" & "Bob".
 SELECT * FROM emp
 EXCEPT
 SELECT * FROM cte
+-------------------------------------------------
+
+
+
+--DB TRIGGERS QUERIES:
+
+--Create a trigger that logs eid & timestamp in another table (called 'Audit')
+-- whenever data-rows/records are deleted in "emp" table.
+create table audit (
+	aid	int IDENTITY(1,1) PRIMARY KEY,
+  	eid	int,
+  	timestamp datetime
+)
+
+--Creating trigger:
+CREATE TRIGGER tg_emp_del
+ON emp
+FOR DELETE
+AS
+BEGIN
+     INSERT INTO audit (eid,timestamp)
+     SELECT eid,getdate() --CURRENT_TIMESTAMP
+     FROM DELETED 
+END
+
+--List all available tirggers:
+select * from sys.triggers
+
+--Delete some data from Emp table:
+DELETE FROM emp
+WHERE eid = 63679 --65646
+
 ------------------------------X------------------------------
 
