@@ -1,8 +1,9 @@
-https://github.com/Eddie-Kumar/Public_SQL/blob/main/lab/Lab_with_examples.txt
+-- Practical exercises - Employee sample data:
+==============================================
 
-SELECT * FROM region
 SELECT * FROM emp
 SELECT * FROM dept
+SELECT * FROM region
 
 --insert a region called "Oceana" with ID - 7
 --Insert some data some data:
@@ -138,28 +139,5 @@ select * from LowSal
 	SELECT e.ename, e.salary, e.managerid, m.ename AS [Mgr-Name] from emp e
 	JOIN emp m ON e.managerid=m.eid
 
---Create a trigger that logs eid & timestamp in another table (called 'Audit')
--- whenever data-rows/records are deleted in "emp" table.
-create table audit (
-	aid	int IDENTITY(1,1) PRIMARY KEY,
-  	eid	int,
-  	timestamp datetime
-)
+-----------------------x-----------------------
 
---Creating trigger:
-CREATE TRIGGER tg_emp_del
-ON emp
-FOR DELETE
-AS
-BEGIN
-     INSERT INTO audit (eid,timestamp)
-     SELECT eid,getdate() --CURRENT_TIMESTAMP
-     FROM DELETED 
-END
-
---List all available tirggers:
-select * from sys.triggers
-
---Delete some data from Emp table:
-DELETE FROM emp
-WHERE eid = 63679 --65646
