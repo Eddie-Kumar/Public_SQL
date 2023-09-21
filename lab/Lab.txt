@@ -1,0 +1,339 @@
+--Lab Setup for Basic/Advanced SQL Exercises:
+--Sample database: Employee Management System
+=============================================
+
+---------------------------------------
+--All rights reserved. GPL-GNU licence.
+--No responsibility will be taken by the author for any issues that may be caused by any code in this file.
+-------------------------------------
+--TO BE EXECUTED IN SSMS (NOT ONLINE LAB-WEBSITES):
+
+--Check SQL Server details (name/version):
+print @@servername  --OR select SERVERPROPERTY('ServerName')		-- host-server & named-instance name.
+print @@version
+print system_user
+
+-------------------------------------
+--Do NOT run following database creation without updating the File-Paths first.
+--(Alterntively, in SSMS create database using GUI (Right click "Databases" -> "New Database")
+CREATE DATABASE [EmpDb]
+ ON  PRIMARY ( NAME = N'EmpDb', FILENAME = N'C:\temp\EmpDb.mdf')
+ LOG ON ( NAME = N'EmpDb_log', FILENAME = N'C:\temp\EmpDb_log.ldf' )
+-------------------------------------
+
+--DB state:
+SELECT database_id, name, state_desc [DB_State], recovery_model_desc, user_access_desc, collation_name, compatibility_level FROM sys.databases WHERE name = 'EmpDb'
+--Change Recovery Model:
+ALTER DATABASE [EmpDb] SET RECOVERY SIMPLE 
+GO
+
+USE EmpDb
+GO
+
+print db_name()  --View database-name in use.
+--------------------------------
+
+
+--SAMPLE TABLES CREATION WITH DATA:
+-----------------------------------
+
+--Create emp table:
+create table emp (
+	eid	int 	 NOT NULL PRIMARY KEY,
+	ename	varchar(100)	,
+	jobtitle	varchar(100)	,
+	managerid	int	,
+	hiredate	date	,
+	salary	money	,
+	commission	decimal(9,2)	,
+	did	int ,
+	rid int
+)			
+
+EXEC sp_tables @table_owner='dbo'
+EXEC sp_help 'emp'
+
+insert into emp (eid,ename,jobtitle,managerid,hiredate,salary,commission,did,rid)
+	Values
+	(	68319, 'Kylie', 'President', 68319, '2009-11-18', 60000.00, NULL , 10	, NULL ),
+	(	66928, 'Bob', 'General Manager', 68319, '2013-05-01', 27500.00, 0.33 , 10	, NULL ),
+	(	67832, 'Clare', 'Technical Manager', 66928, '2011-06-09', 25500.00, NULL , 10	, NULL ),
+	(	65646, 'John', 'Sales Manager', 66928, '2014-04-02', 29570.00, NULL , 10	, NULL ),
+	(	67858, 'Scarlet', 'Analyst', 67832, '2017-04-19', 3100.00, NULL , 20	, NULL ),
+	(	69324, 'Mark', 'DBA', 67832, '2012-01-23', 1900.00, NULL , 20	, NULL ),
+	(	69062, 'Frank', 'Analyst', 67832, '2011-12-03', 3100.00, NULL , 20	, NULL ),
+	(	63679, 'Sandra', 'Developer', 67832, '2010-12-18', 2900.00, NULL , 20	, NULL ),
+	(	64989, 'Irene', 'Sales Representative', 65646, '2018-02-20', 1700.00, 0.1, 30	, 1 ),
+	(	65271, 'Dwayne', 'Sales Representative', 65646, '2011-02-22', 1350.00, 0.05, 30	, 2 ),
+	(	66564, 'Gerogia', 'Sales Representative', 65646, '2011-09-28', 1400.00, 0.02, 30	, 1 ),
+	(	66569, 'Matt', 'Sales Representative', 65646, '2019-01-28', 1325.00, 0.02, 30	, 2 ),
+	(	66571, 'Raj', 'Sales Representative', 65646, '2013-02-15', 1190.00, 0.02, 30	, 5 ),
+	(	68454, 'Tucker', 'Sales Representative', 65646, '2011-09-08', 1600.00, 0.01, 30	, 3 ),
+	(	68455, 'Sam', 'Sales Representative', 65646, '2020-09-18', 1400.00, 0.01, 30	, 4 ),
+	(	68736, 'Andy', 'Technical Support', 67832, '2017-05-23', 1200.00, NULL , 20	, NULL ),
+	(	69000, 'Julie', 'Sales Apprentice', 65646, '2011-12-03', 950.00, NULL , 30 , 4	)
+
+
+--Create dept table:
+CREATE TABLE [dbo].[dept](
+	[did] [int] NOT NULL,
+	[DeptName] [nchar](30) NULL
+)
+
+INSERT INTO dept ([did],[DeptName])
+VALUES
+	(10,	'Mgmt'),
+	(20,	'Tech'),
+	(30,	'Sales'),
+	(40,	'Procurement')
+    
+--Create region table:
+CREATE TABLE [dbo].[region](
+	[rid] [int] NOT NULL,
+	[RegionName] [nchar](30) NULL
+)
+
+INSERT INTO region ([rid],[RegionName])
+VALUES
+	(1,	'Americas'),
+	(2,	'Europe'),
+	(3,	'Australias'),
+	(4,	'Africa'),
+	(5,	'Asia'),
+	(6,	'Antarctica')
+
+-------------------------------------------------------
+EXEC sp_tables @table_owner='dbo'
+SELECT * FROM emp
+SELECT * FROM dept
+SELECT * FROM region
+-------------------------------------------------------
+
+
+--DML queries:
+--insert a region called "Oceana" with ID - 7  in Region table:
+INSERT INTO region
+VALUES (7, 'Oceana')
+
+begin TRANSACTION
+
+--Delete ALL data from Region table:
+TRUNCATE TABLE region
+DELETE FROM region
+
+ROLLBACK
+
+
+SP_HELP 'emp'
+
+ALTER TABLE dept
+ADD CONSTRAINT pk_did
+PRIMARY KEY (did)
+
+ALTER TABLE emp
+ADD CONSTRAINT fk_did
+FOREIGN KEY (did) REFERENCES dept(did)
+
+
+SELECT Col.Column_Name, Col.CONSTRAINT_NAME, *
+from 
+    INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab, 
+    INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col
+WHERE 
+    Col.Constraint_Name = Tab.Constraint_Name
+    AND Col.Table_Name = Tab.Table_Name
+    --AND Tab.Constraint_Type = 'PRIMARY KEY'
+    AND Col.Table_Name = 'emp'
+    
+   
+--JOIN QUERIES:
+--List all employees' names with their dept-names:
+SELECT ename, dept.deptname FROM emp
+JOIN dept ON emp.did = dept.did
+
+
+--List Emp-Names & Region-Names (those who are in a region):
+SELECT ename, r.RegionName FROM emp e
+INNER JOIN region r ON e.rid = r.rid
+
+--List ALL Emp-Names & Region Names (regardless of their regional status):
+SELECT ename, RegionName FROM emp LEFT JOIN region ON emp.rid = region.rid
+
+--List ALL Emp-Names, Region Names, Job-Title, Dept-Name (regardless of their regional status):
+SELECT ename, RegionName, jobtitle, dept.deptname
+FROM emp 
+	LEFT JOIN region ON emp.rid = region.rid
+	LEFT JOIN dept ON emp.did = dept.did
+
+
+sp_help 'emp'
+
+--List employees with their dept-names, job-title and salary, but only those who receive more 
+--than $25,000, with resultset in sorting order of salary with highest salary on top.
+SELECT e.ename, e.jobtitle, d.DeptName, e.salary
+FROM emp e
+	JOIN dept d on e.did = d.did
+WHERE e.salary > 25000
+ORDER BY e.salary DESC
+
+--Single line comment
+/*
+MULTI lines comments
+MULTI lines comments
+...
+*/
+
+--List emp-name, jobtitle whose job-title starts with 'Sales':
+SELECT ename, jobtitle FROM emp
+where jobtitle LIKE 'Sales%'   -- _ = single character, % = any number of characters.
+
+
+
+--List Emp-Names, Dept-IDs, Region-IDs of those who are in a region:
+SELECT ename, did, rid
+from emp
+WHERE rid IS NOT NULL;
+
+
+SELECT * FROM emp
+SELECT * FROM region
+SELECT * FROM dept
+
+--Retrieve employees details along with their Department-names and Region-names for 
+--those employees who are in Sales dept and NOT based in Australias region.
+select e.ename, d.DeptName, e.salary, e.jobtitle, r.RegionName from emp e
+	LEFT JOIN dept d on e.did = d.did
+	LEFT JOIN region r on r.rid = e.rid
+WHERE d.DeptName = 'SALES'
+	AND r.RegionName NOT LIKE '%Australias%'
+
+
+--Departments receiving commission:
+--List only departments whose employess receive some commission.
+SELECT distinct d.DeptName  from dept d
+EXCEPT
+SELECT distinct d.DeptName  from dept d
+JOIN emp e ON e.did=d.did
+WHERE e.commission IS NOT NULL
+
+select * from emp
+
+--List all employees with their line manager's names:
+--Method-1: using INNER query:
+SELECT e1.ename, (SELECT top 1 e2.ename from emp e2 where e2.eid = e1.managerid) from emp e1
+
+--Method-2: Self Join:
+SELECT e.eid, e.ename, e.jobtitle, e.managerid, mgr.ename, mgr.jobtitle 
+FROM emp e
+	LEFT OUTER JOIN emp mgr ON mgr.eid = e.managerid
+
+
+--Show highest salary amount:
+SELECT MAX(SALARY) FROM Emp;
+SELECT 'Max Salary'=MAX(SALARY) FROM Emp;
+
+
+
+--TOP:
+--Show highest salary amount along with ename & jobtitle:
+SELECT top 1 ename, jobtitle, salary FROM Emp
+ORDER BY salary DESC
+
+
+--(2 differnt ways to) get 2nd highest salary with name, salary, jobtitle (optionally: deptname)
+	--Method-1: INNER query:
+    SELECT TOP 1 ename, jobtitle, salary FROM Emp
+    where salary < ( SELECT MAX(SALARY) FROM Emp )
+    ORDER BY salary DESC
+
+	--Method-2: OFFSET..FETCH:
+	select ename, salary, jobtitle from emp
+	order by salary desc
+	offset 1 row fetch next 1 row only
+
+
+
+--DATE QUERIES:
+
+--1st employee hired: First person who joined the company and still a current employee:
+select top 1 * from emp
+order by hiredate asc
+
+--List employees hired on/after 2015 (starting from 1st Jan 2015):
+--use ISO date format 'YYYY-MM-DD'. Avoid local formats '01/01/2015' not recommended:
+SELECT  * FROM emp
+WHERE hiredate >= '2015-01-01'
+ORDER BY HIREDATE ASC;
+
+SELECT  * FROM emp
+WHERE YEAR(hiredate) >= 2015
+ORDER BY HIREDATE ASC;
+
+--where hiredate BETWEEN '2012-01-01' AND '2015-01-01'
+--List employees hired within 2 years before and 2 years after that of John's hiredate:
+SELECT * from emp
+WHERE hiredate BETWEEN DATEADD(year, -2, (select hiredate from emp where ename='Bob'))
+	AND DATEADD(year, 2, (select hiredate from emp where ename='Bob'))
+
+
+
+--VIEWS:
+--Create a VIEW that shows list of employess drawing salary less than 15,000.
+CREATE VIEW v_Sal2K
+AS
+	SELECT ename, jobtitle, salary FROM emp WHERE salary <= 2000
+select * from v_Sal2K
+
+--Create a VIEW called 'v_Emp_Salary_with_Managers' that creates a view retrieving:
+--eName, Salary along with their manager names.
+	CREATE VIEW v_Emp_Salary_with_Managers AS
+	SELECT e.ename, e.salary, e.managerid, m.ename AS [Mgr-Name] from emp e
+	JOIN emp m ON e.managerid=m.eid
+--Usage: SELECT * FROM v_Emp_Salary_with_Managers
+
+
+--DB TRIGGERS QUERIES:
+
+--Create a trigger that logs employee details & timestamp etc in another table (called 'Employee_Audit_Test')
+-- whenever records are added to the "emp" table.
+CREATE TABLE Employee_Audit_Test (
+	Id int IDENTITY(1,1), 
+	Audit_Action text
+)
+select * from Employee_Audit_Test
+
+Create Trigger tr_emp_insert
+ON emp
+FOR INSERT 
+AS 
+BEGIN 
+	Declare @Id int 
+	SELECT @Id = eid from INSERTED
+	INSERT INTO Employee_Audit_Test 
+	VALUES ('New employee with Id = ' + CAST(@Id AS VARCHAR(10)) + ' is added at ' + CAST(Getdate() AS VARCHAR(22))) 
+END
+--TEST INSERT TRIGGER:
+insert into emp (eid,ename,jobtitle,managerid,hiredate,salary,commission,did,rid)
+	Values
+	(	68312, 'Tim', 'CEO', 68319, '2019-11-18', 60000.00, NULL , 10	, NULL )
+
+
+--Create a trigger that logs eid & timestamp in another table (called 'Employee_Audit_Test')
+-- whenever data-rows/records are deleted in "emp" table.
+CREATE OR ALTER TRIGGER tg_emp_del
+ON emp
+FOR DELETE
+AS
+BEGIN
+     INSERT INTO Employee_Audit_Test
+     SELECT 'New employee with Id = ' + CAST(eid AS VARCHAR(10)) + ' is deleted at ' + CAST(Getdate() AS VARCHAR(22)) FROM DELETED 
+END
+
+--List all available tirggers:
+select * from sys.triggers
+
+--Delete some data from Emp table:
+DELETE FROM emp
+WHERE eid = 63679 --65646
+
+SELECT  * FROM emp
