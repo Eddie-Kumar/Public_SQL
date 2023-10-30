@@ -1,0 +1,329 @@
+--DB state:
+SELECT database_id, name, state_desc [DB_State], recovery_model_desc, user_access_desc, collation_name, compatibility_level FROM sys.databases WHERE name = 'EmployeeSystem'
+--Change Recovery Model:
+ALTER DATABASE [EmpDb] SET RECOVERY SIMPLE 
+GO
+
+USE EmployeeSystem
+GO
+
+print db_name()  --View database-name in use.
+--------------------------------
+
+
+--SAMPLE TABLES CREATION WITH DATA:
+-----------------------------------
+
+--Create emp table:
+create table emp (
+	eid	int 	 NOT NULL PRIMARY KEY,
+	ename	varchar(100)	,
+	jobtitle	varchar(100)	,
+	managerid	int	,
+	hiredate	date	,
+	salary	money	,
+	commission	decimal(9,2)	,
+	did	int ,
+	rid int
+)
+
+--EXEC sp_tables @table_owner='dbo'
+--EXEC sp_help 'emp'
+
+insert into emp (eid,ename,jobtitle,managerid,hiredate,salary,commission,did,rid)
+	Values
+	(	68319, 'Kylie', 'President', 68319, '2009-11-18', 60000.00, NULL , 10	, NULL ),
+	(	66928, 'Bob', 'General Manager', 68319, '2013-05-01', 27500.00, 0.33 , 10	, NULL ),
+	(	67832, 'Clare', 'Technical Manager', 66928, '2011-06-09', 25500.00, NULL , 10	, NULL ),
+	(	65646, 'John', 'Sales Manager', 66928, '2014-04-02', 29570.00, NULL , 10	, NULL ),
+	(	67858, 'Scarlet', 'Analyst', 67832, '2017-04-19', 3100.00, NULL , 20	, NULL ),
+	(	69324, 'Mark', 'DBA', 67832, '2012-01-23', 1900.00, NULL , 20	, NULL ),
+	(	69062, 'Frank', 'Analyst', 67832, '2011-12-03', 3100.00, NULL , 20	, NULL ),
+	(	63679, 'Sandra', 'Developer', 67832, '2010-12-18', 2900.00, NULL , 20	, NULL ),
+	(	64989, 'Irene', 'Sales Representative', 65646, '2018-02-20', 1700.00, 0.1, 30	, 1 ),
+	(	65271, 'Dwayne', 'Sales Representative', 65646, '2011-02-22', 1350.00, 0.05, 30	, 2 ),
+	(	66564, 'Gerogia', 'Sales Representative', 65646, '2011-09-28', 1400.00, 0.02, 30	, 1 ),
+	(	66569, 'Matt', 'Sales Representative', 65646, '2019-01-28', 1325.00, 0.02, 30	, 2 ),
+	(	66571, 'Raj', 'Sales Representative', 65646, '2013-02-15', 1190.00, 0.02, 30	, 5 ),
+	(	68454, 'Tucker', 'Sales Representative', 65646, '2011-09-08', 1600.00, 0.01, 30	, 3 ),
+	(	68455, 'Sam', 'Sales Representative', 65646, '2020-09-18', 1400.00, 0.01, 30	, 4 ),
+	(	68736, 'Andy', 'Technical Support', 67832, '2017-05-23', 1200.00, NULL , 20	, NULL ),
+	(	69000, 'Julie', 'Sales Apprentice', 65646, '2011-12-03', 950.00, NULL , 30 , 4	)
+
+
+--Create dept table:
+CREATE TABLE [dbo].[dept](
+	[did] [int] PRIMARY KEY,
+	[DeptName] [nchar](30) NULL
+)
+
+INSERT INTO dept ([did],[DeptName])
+VALUES
+	(10,	'Mgmt'),
+	(20,	'Tech'),
+	(30,	'Sales'),
+	(40,	'Procurement')
+    
+--Create region table:
+CREATE TABLE [dbo].[region2](
+	[rid] [int] NOT NULL,
+	[RegionName] [nchar](30) NULL
+)
+
+INSERT INTO region ([rid],[RegionName])
+VALUES
+	(1,	'Americas'),
+	(2,	'Europe'),
+	(3,	'Australias'),
+	(4,	'Africa'),
+	(5,	'Asia'),
+	(6,	'Antarctica')
+
+-------------------------------------------------------
+EXEC sp_tables @table_owner='dbo'
+SELECT * FROM emp
+SELECT * FROM dept
+SELECT * FROM region
+-------------------------------------------------------
+
+DROP TABLE region2
+
+GO
+sp_help 'emp'
+GO
+sp_help 'dept'
+GO
+sp_help 'region'
+
+ALTER TABLE region 
+ADD CONSTRAINT pk_rid
+PRIMARY KEY (rid);
+
+ALTER TABLE emp
+ADD CONSTRAINT fk_did
+FOREIGN KEY (did) 
+REFERENCES dept (did)
+
+alter table emp
+ADD CONSTRAINT FK_rid
+foreign key (rid)
+references region (rid)
+
+
+
+
+SELECT * FROM emp
+
+--Sorting Order:
+SELECT * FROM emp ORDER BY ename DESC
+
+--Column filter:
+SELECT ename,jobtitle FROM emp
+
+--Row filter:
+SELECT * FROM emp
+WHERE eid = 69000
+
+--List emps earning > 20000
+SELECT * FROM emp
+WHERE salary > 20000
+
+--List emps earning > 2000 and < 20000 
+SELECT * FROM emp
+WHERE salary > 2000 AND salary < 20000;
+
+--BETWEEN operator:
+--List emps earning > 2000 and < 20000 
+SELECT * FROM emp
+WHERE salary BETWEEN 2000 AND 20000;
+
+--List emps earning > 1000 and are in Sales department:
+SELECT * FROM emp
+WHERE did = 30 and salary > 1000;
+
+--LIKE operator:
+--List emps in Sales department or have "Sales" in their job-title (can't use 'did'):
+SELECT * FROM emp
+WHERE jobtitle LIKE '%Sales%'   --WILDCARDS %=any chars,  _=a single char.
+
+--AGGREGATE FUNCTIONS:
+--Get hightest salary:
+SELECT max(salary) AS 'MaxSalary' FROM emp
+
+--Using TOP:
+SELECT TOP 1 * FROM emp --Natural order
+SELECT TOP 1 * FROM emp ORDER BY ename --order by Name
+SELECT TOP 3 * FROM emp ORDER BY salary DESC --order by Salary
+
+
+--Get 2nd hightest salary:
+--Method-1: Inner query:
+SELECT TOP 1 * FROM emp 
+WHERE salary < (SELECT max(salary) AS 'MaxSalary' FROM emp)
+ORDER BY salary DESC
+
+--Method-2: using OFFSET..FETCH:
+SELECT * FROM emp 
+ORDER BY salary DESC
+OFFSET 1 ROW FETCH NEXT 1 ROW ONLY
+
+--First employee hired in the company:
+SELECT TOP 1 * FROM emp ORDER BY hiredate ASC
+
+--List employees hired between years 2012 and 2015:
+SELECT * from emp 
+where hiredate between '2012-01-01' and '2015-12-31'  --ISO date format: 'yyyy-mm-dd'
+
+--List employees hired between years 2012 and 2015 (using years only):
+SELECT * from emp 
+where YEAR(hiredate) between 2012 and 2015    --PRINT year(getdate())
+
+--Using Variables:
+DECLARE @var INT
+SET @var = 4
+PRINT @var
+
+--Pricisely calculate the Age in full (i.e. Days, Months and Years.) from a given Date of birth:
+DECLARE @dob DATE
+SET @dob = '1980-11-05'
+IF @dob IS NULL
+BEGIN
+	SELECT 'Please provide your Date of birth (preferably in ISO format: YYYY-MM-DD)'
+	RETURN
+END
+IF @dob > getdate()  --checks if @DOB is in future
+BEGIN
+	print 'You have entered a date in future,  please enter a valid date of birth in ISO format: YYYY-MM-DD'
+	RETURN
+END
+DECLARE @y INT,@m INT,@d INT --to store date-of-birth year/month/day.
+DECLARE @cy INT,@cm INT,@cd INT --to store current or today's year/month/day.
+DECLARE @t DATE, @dt DATE    --to store temporary dates.
+SET @t = DATEFROMPARTS(DATEPART(YEAR, getdate()), DATEPART(MONTH, @dob), DATEPART(DAY, @dob))
+SET @y = DATEDIFF(YEAR, @dob, getdate())
+IF @t > getdate()  --checks if month & day are higher value
+	SET @y = @y - 1
+SET @t = DATEADD(YEAR, @y, @dob)
+SET @m = DATEDIFF(MONTH, @t, getdate())
+IF DATEPART(DAY, @t) > DATEPART(DAY, getdate())
+BEGIN
+	SET @m = @m - 1
+END
+SET @t = DATEADD(MONTH, @m, @t)
+SET @d = DATEDIFF(DAY, @t, getdate())
+print 'Date of birth: ' + cast(@dob as varchar(10))
+print 'Date today is: ' + cast(cast(getdate() as date) as varchar(10))
+PRINT 'Today you are ' + cast(@y AS varchar(4)) + ' years, ' + cast(@m AS varchar(2)) + ' months and ' + cast(@d AS varchar(2)) + ' days old.'
+
+
+
+--JOIN QUERIES:
+--List employee names and their corresponding department names:
+SELECT e.ename, d.DeptName from emp e
+INNER JOIN dept d
+ON e.did = d.did
+
+--List employee names and their corresponding department names for those who work in Sales deptartment:
+SELECT e.ENAME, d.DeptName FROM EMP e
+INNER JOIN dept d
+	on e.did = d.did
+where d.DeptName = 'sales'
+
+--Retrieve employees details along with their Department-names and Region-names:
+select e.ename, d.DeptName, e.salary, e.jobtitle, r.RegionName
+from emp e
+	JOIN dept d   on e.did = d.did
+	JOIN region r on e.rid = r.rid
+
+--Retrieve employees details along with their Department-names and Region-names for 
+--those employees who are in Sales dept and NOT based in Australias region.
+select e.ename, d.DeptName, e.salary, e.jobtitle, r.RegionName from emp e
+	JOIN dept d on e.did = d.did
+	JOIN region r on r.rid = e.rid
+WHERE d.DeptName = 'SALES'
+	AND r.RegionName NOT LIKE '%Australias%'
+  --AND r.RegionName <> 'Australias'
+
+
+--List dept names and the sum of salareise by departmenmts.
+--To extract information on total sum of salaries being paid to each dapartment:
+SELECT d.DeptName, sum(e.salary) AS SumOfSalaries FROM emp e
+JOIN dept d ON e.did = d.did
+GROUP BY d.DeptName
+
+--Count number of employees in each region:
+SELECT r.RegionName, count(ename) as CountOfEmp FROM EMP e
+JOIN region r on e.rid = r.rid
+group by r.RegionName
+
+
+--List regions and list employees within them. Note: show all the regions even if there are no employees in it:
+SELECT ename, r.RegionName FROM EMP e
+RIGHT JOIN  region r on e.rid = r.rid
+
+--List all employees with their regions and departments. 
+--Note: show all employees, departments and regions even if there are no employees in it:
+select e.ename, d.DeptName, e.jobtitle, r.RegionName from emp e
+	FULL OUTER JOIN dept d on e.did = d.did
+	FULL OUTER JOIN region r on r.rid = e.rid
+--where d.did <> 30
+
+--List all employees with their line manager's names:
+--Method-1:
+select e1.ename, e1.jobtitle, e2.ename[Manager], e2.jobtitle from emp e1
+join emp e2
+on e2.eid = e1.managerid
+
+--Method-2:
+SELECT e.eid, e.ename, e.jobtitle, e.managerid, (select top 1 m.ename from emp m where e.managerid=m.eid) AS [Mgr]
+FROM emp e
+
+
+--Create a trigger that logs eid & timestamp in another table (called 'Audit')
+-- whenever data-rows/records are deleted in "emp" table above information must be logged into the "Audit" table.
+
+--First creat Audit table:
+create table audit (
+	aid	int IDENTITY(1,1) PRIMARY KEY,
+  	eid	int,
+  	timestamp datetime
+)
+GO
+
+--Creating trigger:
+CREATE TRIGGER tg_emp_del
+ON emp
+FOR DELETE
+AS
+BEGIN
+     INSERT INTO audit (eid,timestamp)
+     SELECT eid,getdate() --CURRENT_TIMESTAMP
+     FROM DELETED 
+END
+
+--List all available tirggers:
+select * from sys.triggers
+
+--Delete some data from Emp table:
+DELETE FROM emp
+WHERE eid = 63679 --65646
+
+--Now check Audit table's contents:
+select * from audit
+
+
+
+
+--VIEWS:
+--Create a view that lists all employees with their regions and departments. 
+--Only show employees from Sales dept:
+CREATE VIEW vSales
+AS
+select e.ename, d.DeptName, e.jobtitle, r.RegionName from emp e
+	FULL OUTER JOIN dept d on e.did = d.did
+	FULL OUTER JOIN region r on r.rid = e.rid
+where d.did = 30
+
+
+SELECT * FROM vSales
+WHERE regionname = 'Europe'
